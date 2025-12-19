@@ -2,7 +2,7 @@ Package: hyreg2
 Type: Package
 Title: Estimate Latent Classes on a Mixture of Continuous and
         Dichotomous Data
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: c(person(given = "Svenja",
                       family = "Elkenkamp",
                       role = c("aut", "cre"),
@@ -16,8 +16,8 @@ Authors@R: c(person(given = "Svenja",
                person("EuroQol",
                       role = "fnd"))
 Description: EQ-5D value set estimation can be done using the hybrid model likelihood as described by 
-     Oppe and van Hout (2010) <doi:10.1002/hec.3560> and Ramos-Goñi et al. (2017) <doi:10.1097/MLR.0000000000000283 >. 
-      The package is based on `flexmix()` and among others contains an M-step-driver as described by Leisch (2004) <doi:10.18637/jss.v011.i08>.
+     Oppe and van Hout (2010) <doi:10.1002/hec.3560> and Ramos-Goñi et al. (2017) <doi:10.1097/MLR.0000000000000283>. 
+      The package is based on 'flexmix' and among others contains an M-step-driver as described by Leisch (2004) <doi:10.18637/jss.v011.i08>.
       Users can estimate latent classes and address preference heterogeneity. Both uncensored and censored data are supported. 
       Furthermore, heteroscedasticity can be taken into account. It is possible to control for different covariates on the continuous and dichotomous parts of the data and start values can differ
       between the expected latent classes. 
@@ -26,15 +26,16 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.1
 Imports: flexmix, bbmle, ggplot2, methods, stats, utils
-Suggests: testthat (>= 3.0.0)
+Suggests: knitr, rmarkdown, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: R (>= 2.10)
+VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2025-09-30 10:46:26 UTC; selkenkamp
+Packaged: 2025-12-19 09:55:56 UTC; selkenkamp
 Author: Svenja Elkenkamp [aut, cre],
   Kim Rand [aut],
   John Grosser [aut],
   EuroQol [fnd]
 Maintainer: Svenja Elkenkamp <svenja.elkenkamp@uni-bielefeld.de>
 Repository: CRAN
-Date/Publication: 2025-10-06 08:30:18 UTC
+Date/Publication: 2025-12-19 11:00:03 UTC

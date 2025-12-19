@@ -2,7 +2,7 @@
 % Please edit documentation in R/hyreg2_het.R
 \name{hyreg2_het}
 \alias{hyreg2_het}
-\title{function for model estimation for EQ-5D valueset data accounting for heteroscedasticity in continous data}
+\title{Estimating hybrid models accounting for heteroscedasticity in continuous data}
 \usage{
 hyreg2_het(
   formula,
@@ -30,7 +30,7 @@ hyreg2_het(
 )
 }
 \arguments{
-\item{formula}{linear model \code{formula}. Using \verb{|x} will include a grouping variable \code{x}. see Details.}
+\item{formula}{linear model \code{formula}. Using \verb{|xg} will include a grouping variable \code{xg}. see Details.}
 
 \item{formula_sigma}{linear \code{formula} linear formula for sigma estimation. If \code{formula_sigma} is not provided,
 \code{formula} (excluding any grouping variables) is used by default, see Details}
@@ -91,14 +91,14 @@ see Details.}
 model object of type flemix, coefficients named ..._h are coefficients for heteroscedasticity
 }
 \description{
-Estimation of hybrid model for EQ-5D data
+Estimation of hybrid model using continuous and dichotomous data e.g. EQ-5D data
 }
 \details{
 see details of different inputs listed below
 }
 \section{formula}{
 
-a typical R formula of the form \verb{y ~ x1 + x2 + …} should be provided.
+a classic R formula of the form \verb{y ~ x1 + x2 + …} should be provided.
 Additionally, it is possible to include a grouping variable for repeated measures by using
 \verb{“| xg”} where \code{xg} is the column containing the group-memberships. The resulting formula will look
 like this:  \verb{y ~ x1 + x2 +… | xg}.  In \code{flexmix}, this is called the concomitant variable specification:

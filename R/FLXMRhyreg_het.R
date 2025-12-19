@@ -1,5 +1,5 @@
 
-#' M-step driver to be used in flexmix accounting for heteroscedastisity
+#'  M-step driver to be used in flexmix accounting for heteroscedastisity
 #'
 #' @description Function used in flexmix M-Step to estimate hybrid model accounting for heteroscedastisity
 #'
@@ -94,8 +94,6 @@ FLXMRhyreg_het <- function(data,
                            optimizer = "optim",
                            lower = -Inf,
                            upper = Inf,
-                           #                       non_linear = FALSE,
-                           #                       formula_orig = formula_orig,
                            ...
 )
 {
@@ -105,7 +103,7 @@ FLXMRhyreg_het <- function(data,
   # refit function has to depend on x,y,w.
 
   hyregrefit <- function(x, y, w) {
-    warning(paste0("Not defined", "Please try hyreg2:::refit"))
+    warning(paste0("Not defined"))
     return(NA)
   }
 
@@ -127,12 +125,11 @@ FLXMRhyreg_het <- function(data,
         dotarg = list(...)
         if("offset" %in% names(dotarg)) offset <- dotarg$offset
 
+        # change needed for non-classic formulas
         if(type == type_cont){
-          # change for non-linear functions
           p <- x %*% para$coef[is.element(names(para$coef),c(variables_cont,variables_both))]  # Xb in xreg
         }
         if(type == type_dich){
-          # change for non-linear functions
           p <- (x %*% para$coef[is.element(names(para$coef),c(variables_dich,variables_both))]) * para$theta
         }
 
@@ -152,18 +149,25 @@ FLXMRhyreg_het <- function(data,
 
 
         # prepare data
-        # change for non-linear functions
-        # use formula_orig
         x1 <- x[type == type_cont,c(variables_cont,variables_both)]
         x2 <-  x[type == type_dich,c(variables_dich,variables_both)]
         y1 <- y[type == type_cont]
         y2 <-  y[type == type_dich]
 
 
-        # linear predictor
-        # change for non-linear functions
-        Xb1 <- x1 %*% para$coef[colnames(x1)] # only cont and both variables
-        Xb2 <- (x2 %*% para$coef[colnames(x2)]) * exp(theta)  # only dich and both variables
+        if(length(c(variables_cont,variables_both)) == 1){
+          Xb1 <- as.matrix(x1 * para$coef[c(variables_cont,variables_both)])
+          colnames(Xb1) <- c(variables_cont,variables_both)
+        }else{
+          Xb1 <- x1 %*% para$coef[colnames(x1)]
+        }
+
+        if(length(c(variables_dich,variables_both)) == 1){
+          Xb2 <- as.matrix( (x2 * para$coef[c(variables_dich,variables_both)]) * exp(theta) )
+          colnames(Xb2) <- c(variables_dich,variables_both)
+        }else{
+          Xb2 <-(x2 %*% para$coef[colnames(x2)]) * exp(theta)
+        }
 
 
         # pvals and likelihood
@@ -202,11 +206,7 @@ FLXMRhyreg_het <- function(data,
           parameters=list(coef=para$coef,
                           sigma=para$sigma,
                           theta = para$theta,
-                          #  stderror = para$stderror,
-                          #  pvalue = para$pvalue,
                           fit_mle = para$fit_mle),
-          # counter = counter),
-          #minLik = para$minLik),
           logLik=logLik, predict=predict,
           df=para$df)
     }
@@ -239,10 +239,21 @@ FLXMRhyreg_het <- function(data,
         stv_dich <- stv[!is.element(names(stv),c("sigma","theta", variables_cont))]
 
 
-        # linear predictors
-        # use formula_orig for non-linear functions
-        Xb1 <- x1 %*% stv_cont[colnames(x1)] # hier könnte man ggf nur TTO spezifische Variablen einfließen lassen, Interaktionen etc beachten
-        Xb2 <- x2 %*% stv_dich[colnames(x2)]
+
+        if(length(stv_cont) == 1){
+          Xb1 <- as.matrix(x1 * stv_cont)
+          colnames(Xb1) <- stv_cont
+        }else{
+          Xb1 <- x1 %*% stv_cont[colnames(x1)]
+        }
+
+        if(length(stv_dich) == 1){
+          Xb2 <- as.matrix(x2 * stv_dich)
+          colnames(Xb2) <- stv_dich
+        }else{
+          Xb2 <- x2 %*% stv_dich[colnames(x2)]
+        }
+
         Xb2 <- Xb2*theta
 
 
@@ -268,7 +279,7 @@ FLXMRhyreg_het <- function(data,
         pvals <- c(pvals1,pvals2)
 
 
-        pvals[pvals == -Inf] <- log(.Machine$double.xmin) # or without log?
+        pvals[pvals == -Inf] <- log(.Machine$double.xmin)
         pvals[pvals == Inf] <- log(.Machine$double.xmax)
 
 
@@ -276,9 +287,7 @@ FLXMRhyreg_het <- function(data,
         pvals_w <- pvals * w
 
 
-        return(-sum(pvals_w))   # look up Leisch: FlexMix: A General Framework for Finite Mixture
-        #                  Models and Latent Class Regression in R, p. 3
-        # w must be posterior class probabilities for each observation, pvals is already the log?
+        return(-sum(pvals_w))
       }
 
 
@@ -293,15 +302,15 @@ FLXMRhyreg_het <- function(data,
         the$counter <- 1
 
 
-
-        stv_in <- stv # without sigma !
-        stv_sigma_in <- stv_sigma
-
         if(is.list(stv)){
           stv_in <- stv[[the$counter]]
+        }else{
+          stv_in <- stv # without sigma !
         }
         if(is.list(stv_sigma)){
           stv_sigma_in <- stv_sigma[[the$counter]]
+        }else{
+          stv_sigma_in <- stv_sigma
         }
 
 
@@ -314,22 +323,24 @@ FLXMRhyreg_het <- function(data,
 
       }else{
         if(the$counter < the$k){
-          the$counter <<- the$counter + 1
+          the$counter <- the$counter + 1
 
-
-          stv_in <- stv # without sigma !
-          stv_sigma_in <- stv_sigma
 
           if(is.list(stv)){
             stv_in <- stv[[the$counter]]
+          }else{
+            stv_in <- stv # without sigma !
           }
           if(is.list(stv_sigma)){
             stv_sigma_in <- stv_sigma[[the$counter]]
+          }else{
+            stv_sigma_in <- stv_sigma
           }
 
 
+
           fit_mle <- bbmle::mle2(minuslogl = logLik2,
-                                 start = c(stv,stv_sigma),
+                                 start = c(stv_in,stv_sigma_in),
                                  optimizer = optimizer,
                                  method = opt_method,
                                  lower = lower,
@@ -348,13 +359,10 @@ FLXMRhyreg_het <- function(data,
       }
 
       z@defineComponent(para = list(coef = fit_mle@coef[!is.element(names(fit_mle@coef),c(names(stv_sigma),"theta"))],
-                                    df = ncol(x) + 1, # wrong? how to change
+                                    df = ncol(x) + 1, #  how to change ???
                                     sigma = fit_mle@coef[is.element(names(fit_mle@coef),names(stv_sigma))],
                                     theta = fit_mle@coef[is.element(names(fit_mle@coef),c("theta"))],
                                     fit_mle = fit_mle,
-                                    # counter = the$counter,
-                                    # stderror = summary(fit_mle)@coef[,2],  # trying to get slot "coef" from an object (class "summaryDefault") that is not an S4 object
-                                    #  pvalue = summary(fit_mle)@coef[,4],
                                     minLik = fit_mle@min)
       )
     }

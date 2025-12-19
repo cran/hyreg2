@@ -2,7 +2,7 @@
 % Please edit documentation in R/hyreg2.R
 \name{hyreg2}
 \alias{hyreg2}
-\title{function for model estimation for EQ-5D valuesets}
+\title{Estimating hybrid models}
 \usage{
 hyreg2(
   formula,
@@ -24,11 +24,13 @@ hyreg2(
   variables_both = NULL,
   variables_dich = NULL,
   variables_cont = NULL,
+  formula_type_classic = TRUE,
   ...
 )
 }
 \arguments{
-\item{formula}{linear model \code{formula}. Using \verb{|x} will include a grouping variable \code{x}. see Details.}
+\item{formula}{model \code{formula}, can be linear or non-linear. For non-linear formulas, variables and parameters
+must be provided and \code{formula_type_classic} must be set to \code{FALSE}. Using \verb{|xg} will include a grouping variable \code{xg}. see Details.}
 
 \item{data}{a \code{data.frame} containing the data. see Details.}
 
@@ -77,20 +79,29 @@ see Details.}
 \item{variables_cont}{\code{character} vector; variables to be fitted only on continous data. If provided,
 \code{variables_both} and \code{variables_dich} must be provided as well.}
 
+\item{formula_type_classic}{\code{logical}; is the provided \code{formula} a classic R formula containing only variables (\code{TRUE})
+or does it include both variables and parameters (\code{FALSE})? default \code{TRUE}, see Details}
+
 \item{...}{additional arguments for \code{\link[flexmix:flexmix]{flexmix::flexmix()}} or \code{\link[bbmle:mle2]{bbmle::mle2()}}}
 }
 \value{
-model object of type \code{flexmix} or \code{list} of model objects of type \code{flexmix}
+model object of type \code{flexmix} or \code{list} of model objects of type \code{flexmix}.
+Please note, that the estimates for \code{sigma} and \code{theta} are on a log-scale and have to be transformed using \code{exp()}to get the correct estimated values.
 }
 \description{
-Estimation of hybrid model for EQ-5D data
+Estimation of hybrid model using continuous and dichotomous data e.g. EQ-5D data
 }
 \details{
-see details of different inputs listed below
+see details of different inputs listed below.
 }
 \section{formula}{
 
-a typical R formula of the form \verb{y ~ x1 + x2 + …} should be provided.
+a classic R formula containing only variables(e.g.\verb{y ~ x1 + x2 + …}) can be provided as well as a formula
+including variables and parameters (non-classic) e.g. \code{y ~ x1 * beta1 + x2 * beta2}  or \code{y ~ 1/exp(x1 * beta1 + x2 * beta2)},
+where \code{beta} are the parameters to be estimated and the\code{x}s are column names from the dataset.
+Non-linear models and the 8-parameter model for EQ-5D data can only be estimated using a non-classic formula.
+If the provided formula is non-classic, \code{formula_type_classic} must be set to \code{FALSE}.
+When estimating an intercept, the formula must explicitly include a parameter named \code{"INTERCEPT"}(without a corresponding variable from the dataset)
 Additionally, it is possible to include a grouping variable for repeated measures by using
 \verb{“| xg”} where \code{xg} is the column containing the group-memberships. The resulting formula will look
 like this:  \verb{y ~ x1 + x2 +… | xg}.  In \code{flexmix}, this is called the concomitant variable specification:
@@ -119,7 +130,7 @@ the given start values must be a \verb{named vector}. Otherwise (if different st
 each latent class), a \code{list} of named vectors should be used . In this case, there must be one entry
 in the list for each latent class.  Each start value vector must include start values for sigma and
 theta. Currently, it is necessary to use the names \code{"sigma"} and \code{"theta"} for these values.
-If users are unsure for which variables start values must be provided, this can be checked by
+If users are unsure for which variables start values must be provided (in the linear formula case), this can be checked by
 calling \code{colnames(model.matrix(formula,data))}. In this call, the \code{formula} should not include the
 grouping variable.
 }
@@ -129,7 +140,8 @@ grouping variable.
 in some situations, it can be useful to identify the latent classes on
 only one \code{type} of data while estimating the model parameters on both \code{types} of data. In such cases,
 the input variable \code{latent} can be used to specify on which type of data the classification should be done.
-If \verb{“cont”} or \verb{“dich”} is used, the input parameter \code{id_col} must be specified and gives the name,
+If \verb{“cont”} or \verb{“dich”} is used, \code{formula} must contain a grouping variable and additionally the
+input parameter \code{id_col} must be specified and gives the name,
 i.e. a \verb{character string}, of the grouping variable for classification. Some groups may be removed from
 the data, since they have only continuous or only dichotomous observations. Then in a first step,
 a model is estimated only on the continuous/dichotomous data and the achieved classification is stored.

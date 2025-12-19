@@ -1,10 +1,11 @@
 
 
-#' function for model estimation for EQ-5D valuesets
+#' Estimating hybrid models
 #'
-#' @description Estimation of hybrid model for EQ-5D data
+#' @description Estimation of hybrid model using continuous and dichotomous data e.g. EQ-5D data
 #'
-#' @param formula linear model `formula`. Using `|x` will include a grouping variable `x`. see Details.
+#' @param formula model `formula`, can be linear or non-linear. For non-linear formulas, variables and parameters
+#' must be provided and `formula_type_classic` must be set to `FALSE`. Using `|xg` will include a grouping variable `xg`. see Details.
 #' @param data a `data.frame` containing the data. see Details.
 #' @param type either the name of the column in `data` containing an indicator of whether an
 #'   observation is continuous or dichotomous (as `character`), or a `vector` containing the indicator.
@@ -34,15 +35,24 @@
 #' `variables_both` and `variables_dich` must be provided as well.
 #' @param variables_dich `character` vector; variables to be fitted only on dichotomous data, if provided,
 #'  `variables_both` and `variables_cont` must be provided as well.
+#' @param formula_type_classic `logical`; is the provided `formula` a classic R formula containing only variables (`TRUE`)
+#'   or does it include both variables and parameters (`FALSE`)? default `TRUE`, see Details
 #' @param ... additional arguments for [flexmix::flexmix()] or [bbmle::mle2()]
 #'
-#' @return model object of type `flexmix` or `list` of model objects of type `flexmix`
+#' @return model object of type `flexmix` or `list` of model objects of type `flexmix`.
+#' Please note, that the estimates for `sigma` and `theta` are on a log-scale and have to be transformed using `exp()`to get the correct estimated values.
 #'
 #' @details
-#' see details of different inputs listed below
+#' see details of different inputs listed below.
+#'
 #'
 #'@section formula:
-#' a typical R formula of the form `y ~ x1 + x2 + …` should be provided.
+#' a classic R formula containing only variables(e.g.`y ~ x1 + x2 + …`) can be provided as well as a formula
+#' including variables and parameters (non-classic) e.g. `y ~ x1 * beta1 + x2 * beta2`  or `y ~ 1/exp(x1 * beta1 + x2 * beta2)`,
+#'  where `beta` are the parameters to be estimated and the`x`s are column names from the dataset.
+#'  Non-linear models and the 8-parameter model for EQ-5D data can only be estimated using a non-classic formula.
+#'  If the provided formula is non-classic, `formula_type_classic` must be set to `FALSE`.
+#' When estimating an intercept, the formula must explicitly include a parameter named `"INTERCEPT"`(without a corresponding variable from the dataset)
 #' Additionally, it is possible to include a grouping variable for repeated measures by using
 #' `“| xg”` where `xg` is the column containing the group-memberships. The resulting formula will look
 #' like this:  `y ~ x1 + x2 +… | xg`.  In `flexmix`, this is called the concomitant variable specification:
@@ -69,7 +79,7 @@
 #'  each latent class), a `list` of named vectors should be used . In this case, there must be one entry
 #'  in the list for each latent class.  Each start value vector must include start values for sigma and
 #'  theta. Currently, it is necessary to use the names `"sigma"` and `"theta"` for these values.
-#'  If users are unsure for which variables start values must be provided, this can be checked by
+#'  If users are unsure for which variables start values must be provided (in the linear formula case), this can be checked by
 #'  calling `colnames(model.matrix(formula,data))`. In this call, the `formula` should not include the
 #'  grouping variable.
 #'
@@ -78,7 +88,8 @@
 #' in some situations, it can be useful to identify the latent classes on
 #' only one `type` of data while estimating the model parameters on both `types` of data. In such cases,
 #' the input variable `latent` can be used to specify on which type of data the classification should be done.
-#'  If `“cont”` or `“dich”` is used, the input parameter `id_col` must be specified and gives the name,
+#'  If `“cont”` or `“dich”` is used, `formula` must contain a grouping variable and additionally the
+#'  input parameter `id_col` must be specified and gives the name,
 #'  i.e. a `character string`, of the grouping variable for classification. Some groups may be removed from
 #'  the data, since they have only continuous or only dichotomous observations. Then in a first step,
 #'  a model is estimated only on the continuous/dichotomous data and the achieved classification is stored.
@@ -156,10 +167,8 @@ hyreg2 <-function(formula,
                   variables_both = NULL,
                   variables_dich = NULL,
                   variables_cont = NULL,
-               #   non_linear = FALSE,
+                  formula_type_classic = TRUE,
                   # additional arguments for flexmix or optimizer ?
-                  # MISSING:
-                  # non linear regression not implemented yet
                   ...){
 
   dotarg <- list(...)
@@ -170,6 +179,9 @@ hyreg2 <-function(formula,
 
   # assign k to k in package environment to be used during M-step driver
   assign("k", k, envir=the)
+  if(exists("counter", envir = the)){
+    rm("counter", envir = the)
+  }
 
   # prepare formula handling
   formula_string <- paste(deparse(formula), collapse = "")
@@ -177,46 +189,51 @@ hyreg2 <-function(formula,
   formula_short <- as.formula(formula_parts[1])
 
 
-  ### STV Check ###
-  # check stv for names in x (model.matrix(formula,data))
 
-  # no stv
-  if(!is.list(stv)){
-    if(is.null(stv)){
-      warning(paste0("Argument stv not provided. Setting all start values from formula to 0.1 and start values for sigma and theta to 1."))
-      stv <- setNames(c(rep(0.1,dim(model.matrix(formula_short,data))[2]),1,1), c(colnames(model.matrix(formula_short,data)),c("sigma","theta")))
-    }else{
 
-      # one or more stv missing
-      if(any(!is.element(colnames(model.matrix(formula_short,data)),names(stv)))){
-        miss <- colnames(model.matrix(formula_short,data))[!is.element(colnames(model.matrix(formula_short,data)),names(stv))]
-        stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
-        ))
+  # STV CHECK BASED ON FORMULA_TYPE_CLASSIC
+  if(isTRUE(formula_type_classic)){
+
+    ### STV Check Classic ###
+    # check stv for names in x (model.matrix(formula,data))
+
+    # no stv
+    if(!is.list(stv)){
+      if(is.null(stv)){
+        warning(paste0("Argument stv not provided. Setting all start values from formula to 0.1 and start values for sigma and theta to 1."))
+        stv <- setNames(c(rep(0.1,dim(model.matrix(formula_short,data))[2]),1,1), c(colnames(model.matrix(formula_short,data)),c("sigma","theta")))
+      }else{
+
+        # one or more stv missing
+        if(any(!is.element(colnames(model.matrix(formula_short,data)),names(stv)))){
+          miss <- colnames(model.matrix(formula_short,data))[!is.element(colnames(model.matrix(formula_short,data)),names(stv))]
+          stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
+          ))
+        }
+
+        # theta missing
+        if(!is.element("theta",names(stv))){
+          stv <- c(stv,setNames(1,"theta"))
+          warning(paste0("Start value missing for theta, setting to 1."))
+        }
+
+        # sigma missing
+        if(!is.element("sigma",names(stv))){
+          stv <- c(stv,setNames(1,"sigma"))
+          warning(paste0("Start value missing for sigma, setting to 1."))
+        }
+
+        # stv for variables not in formula given, d.h. zu viele angegeben
+        if(any(!is.element(names(stv), c(colnames(model.matrix(formula_short,data)),"theta","sigma")))){
+          much <- names(stv)[!is.element(names(stv), c(colnames(model.matrix(formula_short,data)),"theta","sigma"))]
+          stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
+        }
+        #  check order in FLXMRhyreg
       }
 
-      # theta missing
-      if(!is.element("theta",names(stv))){
-        stv <- c(stv,setNames(1,"theta"))
-        warning(paste0("Start value missing for theta, setting to 1."))
-      }
+    }else{ # stv is a list
 
-      # sigma missing
-      if(!is.element("sigma",names(stv))){
-        stv <- c(stv,setNames(1,"sigma"))
-        warning(paste0("Start value missing for sigma, setting to 1."))
-      }
-
-      # stv for variables not in formula given, d.h. zu viele angegeben
-      if(any(!is.element(names(stv), c(colnames(model.matrix(formula_short,data)),"theta","sigma")))){
-        much <- names(stv)[!is.element(names(stv), c(colnames(model.matrix(formula_short,data)),"theta","sigma"))]
-        stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
-      }
-      #  check order in FLXMRhyreg
-    }
-
-  }else{ # stv is a list
-
-   # warning(paste0("stv is a list. Please ensure that variables_both, variables_dich and variables_cont are provided"))
+      # warning(paste0("stv is a list. Please ensure that variables_both, variables_dich and variables_cont are provided"))
 
       for(i in 1:length(stv)){
         # one or more stv missing
@@ -245,6 +262,91 @@ hyreg2 <-function(formula,
         }
       }
     }
+  }else{  # close formula_type_classic TRUE
+
+    # ADAPTIONS FOR NON-CLASSIC FORMULAS
+
+    # save data and formula in the environment
+    assign("formula_non", formula_short, envir=the)
+    assign("data", data, envir=the)
+
+    # transform formulas for flexmix inputs
+    formula <- get_data_vars(formula, data)
+    formula_short <- get_data_vars(formula_short, data)
+
+
+    ### STV Check NON-CLASSIC ###
+
+    # check stv for names in formula
+    vars <- all.vars(the$formula_non[[3]])[!is.element(all.vars(the$formula_non[[3]]),names(data))]
+
+    # no stv
+    if(!is.list(stv)){
+      if(is.null(stv)){
+        warning(paste0("Argument stv not provided. Setting all start values from formula to 0.1 and start values for sigma and theta to 1."))
+        stv <- setNames(c(rep(0.1,length(vars)),1,1), c(vars,c("sigma","theta")))
+      }else{
+
+        # one or more stv missing
+        if(any(!is.element(vars,names(stv)))){
+          miss <- vars[!is.element(vars,names(stv))]
+          stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
+          ))
+        }
+
+        # theta missing
+        if(!is.element("theta",names(stv))){
+          stv <- c(stv,setNames(1,"theta"))
+          warning(paste0("Start value missing for theta, setting to 1."))
+        }
+
+        # sigma missing
+        if(!is.element("sigma",names(stv))){
+          stv <- c(stv,setNames(1,"sigma"))
+          warning(paste0("Start value missing for sigma, setting to 1."))
+        }
+
+        # stv for variables not in formula given, d.h. zu viele angegeben
+        if(any(!is.element(names(stv), c(vars,"theta","sigma")))){
+          much <- names(stv)[!is.element(names(stv), c(vars,"theta","sigma"))]
+          stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
+        }
+        #  check order in FLXMRhyreg
+      }
+
+    }else{ # stv is a list
+
+      # warning(paste0("stv is a list. Please ensure that variables_both, variables_dich and variables_cont are provided"))
+
+      for(i in 1:length(stv)){
+        # one or more stv missing
+        if(any(!is.element(vars,names(stv[[i]])))){
+          miss <- vars[!is.element(vars,names(stv[[i]]))]
+          stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
+          ))
+        }
+
+        # theta missing
+        if(!is.element("theta",names(stv[[i]]))){
+          stv[[i]] <- c(stv[[i]],setNames(1,"theta"))
+          warning(paste0("Start value missing for theta, setting to 1."))
+        }
+
+        # sigma missing
+        if(!is.element("sigma",names(stv[[i]]))){
+          stv[[i]] <- c(stv[[i]],setNames(1,"sigma"))
+          warning(paste0("Start value missing for sigma, setting to 1."))
+        }
+
+        # stv for variables not in formula given, d.h. zu viele angegeben
+        if(any(!is.element(names(stv[[i]]), c(vars,"theta","sigma")))){
+          much <- names(stv[[i]])[!is.element(names(stv[[i]]), c(vars,"theta","sigma"))]
+          stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
+        }
+      }
+    }
+  } # close formula_type_classic FALSE check (non-classic formulas)
+
 
 
   ### TYPE Check ###
@@ -280,7 +382,7 @@ hyreg2 <-function(formula,
 
   }else{
 
-    # if stv is a list, both classes have to depend on the same variable set,
+    # if stv is a list, both classes have to depend on the same set of variables,
     # stv of different classes have same names (hence using stv[[1]] is okay here)
     # different set of variables for each class not supported yet!
 
@@ -301,180 +403,201 @@ hyreg2 <-function(formula,
   }
 
 
-  ### NON LINEAR FUNCTIONS ###
-  formula_orig <- formula
-#  if(non_linear == TRUE){
-    # formula <- function to keep only names of data columns
-#  }
-  # for linear functoins formula and formula_orig are the same
+  ### PREPARE M-STEP FOR NON-CLASSIC FORMULAS ###
+
+  if(isFALSE(formula_type_classic)){
+
+    # hard coding for stv as list because formulas must be the same for all components
+    # change this if formulas can differ between components
+
+    assign("stv", stv, envir=the)
+
+    if(!is.list(stv)){
+      assign("stv_cont", stv[!is.element(names(stv),c("sigma","theta", variables_dich))], envir = the)
+      assign("stv_dich", stv[!is.element(names(stv),c("sigma","theta", variables_cont))], envir = the)
+    }else{
+      assign("stv_cont", stv[[1]][!is.element(names(stv[[1]]),c("sigma","theta", variables_dich))], envir = the)
+      assign("stv_dich", stv[[1]][!is.element(names(stv[[1]]),c("sigma","theta", variables_cont))], envir = the)
+    }
+
+    assign("formula_cont", formulacheck_variables(the$formula_non, the$data, the$stv_cont), envir = the)
+    assign("formula_dich", formulacheck_variables(the$formula_non, the$data, the$stv_dich), envir = the)
+  }
+
+
+  ### ESTIMATION ###
+  if(latent == "both"){
+
+    model <- list(FLXMRhyreg(type= type,
+                             stv = stv,
+                             type_cont = type_cont,
+                             type_dich = type_dich,
+                             variables_both = variables_both,
+                             variables_cont = variables_cont,
+                             variables_dich = variables_dich,
+                             opt_method = opt_method,
+                             optimizer = optimizer,
+                             lower = lower,
+                             upper = upper,
+                             formula_type_classic = formula_type_classic))
 
 
 
- ### ESTIMATION ###
- if(latent == "both"){
+    fit <- flexmix::flexmix(formula = formula, data = data, k = k, model = model, control = control)
+    rm(counter, envir = the) # counter will be created during the M-step driver
 
-   model <- list(FLXMRhyreg(type= type,
-                            stv = stv,
-                            type_cont = type_cont,
-                            type_dich = type_dich,
-                            variables_both = variables_both,
-                            variables_cont = variables_cont,
-                            variables_dich = variables_dich,
-                            opt_method = opt_method,
-                            optimizer = optimizer,
-                            lower = lower,
-                            upper = upper))
-                            #non_linear = non_linear))
-                            #formula_orig = formula
+    return(fit)
 
+  }else{
+    # latent = "cont" or "dich"
 
+    # Prepare first step
+    if(is.null(id_col)){
+      stop("id_col needed")
+    }
 
-   fit <- flexmix::flexmix(formula = formula, data = data, k = k, model = model, control = control)
-   rm(counter, envir = the) # counter will be created during the M-step driver
+    idframe <- data.frame(id = data[,id_col],type)
+    idcount <- as.data.frame(table(unique(idframe)))
+    data <- data[!is.element(as.character(data[,id_col]), as.character(idcount[idcount$Freq == 0,"id"])),]
+    type <- idframe[!is.element(as.character(idframe[,"id"]), as.character(idcount[idcount$Freq == 0,"id"])),"type"]
 
-   return(fit)
+    if(any(idcount$Freq == 0)){
+      miss <- idcount[idcount$Freq == 0,"id"]
+      warning(paste0(id_col ,paste(miss, collapse = ", "), " were removed, since they had only continuous or only dichotomous observations."))
+    }
 
- }else{
-   # latent = "cont" or "dich"
+    # FIRST STEP: GET LATENT CLASSES
+    if(latent == "cont"){
+      data_cont <- data[type == type_cont,]
+      assign("data", data_cont, envir = the)
 
-   # Prepare first step
-   if(is.null(id_col)){
-     stop("id_col needed")
-   }
-
-   idframe <- data.frame(id = data[,id_col],type)
-   idcount <- as.data.frame(table(unique(idframe)))
-   #as.character(idcount[idcount$Freq == 0,"id"])
-   data <- data[!is.element(as.character(data[,id_col]), as.character(idcount[idcount$Freq == 0,"id"])),]
-   type <- idframe[!is.element(as.character(idframe[,"id"]), as.character(idcount[idcount$Freq == 0,"id"])),"type"]
-
-   if(any(idcount$Freq == 0)){
-     miss <- idcount[idcount$Freq == 0,"id"]
-     warning(paste0(id_col ,paste(miss, collapse = ", "), " were removed, since they had only continuous or only dichotomous observations."))
-   }
-
-   # FIRST STEP: GET LATENT CLASSES
-   if(latent == "cont"){
-     data_cont <- data[type == type_cont,]
-     model <- list(FLXMRhyreg(type= type[type == type_cont],
-                              stv = stv,
-                              type_cont = type_cont,
-                              type_dich = type_dich,
-                              variables_both = variables_both,
-                              variables_cont = variables_cont,
-                              variables_dich = variables_dich,
-                              opt_method = opt_method,
-                              optimizer = optimizer,
-                              lower = lower,
-                              upper = upper,
-                            #  non_linear = non_linear,
-                              formula_orig = formula_orig))
+      model <- list(FLXMRhyreg(type= type[type == type_cont],
+                               stv = stv,
+                               type_cont = type_cont,
+                               type_dich = type_dich,
+                               variables_both = variables_both,
+                               variables_cont = variables_cont,
+                               variables_dich = variables_dich,
+                               opt_method = opt_method,
+                               optimizer = optimizer,
+                               lower = lower,
+                               upper = upper,
+                               formula_type_classic = formula_type_classic))
 
 
-     mod <- flexmix::flexmix(formula = formula, data = data_cont, k = k, model = model, control = control)
-     rm(counter, envir = the)
+      mod <- flexmix::flexmix(formula = formula, data = data_cont, k = k, model = model, control = control)
+      rm(counter, envir = the)
 
 
 
-     # id_col must be something different than id if each observation should be classified
-     data_cont$mod_comp <- mod@cluster
+      # id_col must be something different than id if each observation should be classified
+      data_cont$mod_comp <- mod@cluster
 
-     data$roworder <- 1:nrow(data)
-     data <- merge(data, unique(data_cont[,c(id_col,"mod_comp")]), by = id_col)
-     data <- data[order(data$roworder), ]
+      data$roworder <- 1:nrow(data)
+      data <- merge(data, unique(data_cont[,c(id_col,"mod_comp")]), by = id_col)
+      data <- data[order(data$roworder), ]
 
-     id_classes <- data_cont[,c(id_col,"mod_comp")]
+      id_classes <- data_cont[,c(id_col,"mod_comp")]
 
-   }
+    }
 
-   if(latent == "dich"){
-     data_dich <- data[type == type_dich,]
-     model <- list(FLXMRhyreg(type= type[type == type_dich],
-                              stv = stv,
-                              type_cont = type_cont,
-                              type_dich = type_dich,
-                              variables_both = variables_both,
-                              variables_cont = variables_cont,
-                              variables_dich = variables_dich,
-                              opt_method = opt_method,
-                              optimizer = optimizer,
-                              lower = lower,
-                              upper = upper,
-                            #  non_linear = non_linear,
-                              formula_orig = formula_orig))
+    if(latent == "dich"){
+      data_dich <- data[type == type_dich,]
+      assign("data", data_dich, envir = the)
 
-
-     mod <- flexmix::flexmix(formula = formula, data = data_dich, k = k, model = model, control = control)
-     rm(counter, envir = the) # counter will be created during the M-step driver
-
-     data_dich$mod_comp <- mod@cluster
-
-     data$roworder <- 1:nrow(data)
-     data <- merge(data, unique(data_dich[,c(id_col,"mod_comp")]), by = id_col)
-     data <- data[order(data$roworder), ]
-
-     # später auch ausgeben können, welche ID zu welcher Klasse zugeordnet wurde
-     id_classes <- data_dich[,c(id_col,"mod_comp")]
-   }
-
-   # return only estimated classes without model new model coefficients
-   if(classes_only == TRUE){
-     return(id_classes)
-   }
+      model <- list(FLXMRhyreg(type= type[type == type_dich],
+                               stv = stv,
+                               type_cont = type_cont,
+                               type_dich = type_dich,
+                               variables_both = variables_both,
+                               variables_cont = variables_cont,
+                               variables_dich = variables_dich,
+                               opt_method = opt_method,
+                               optimizer = optimizer,
+                               lower = lower,
+                               upper = upper,
+                               formula_type_classic = formula_type_classic))
 
 
-# SECOND STEP: GET MODEL ESTIMATES
+      mod <- flexmix::flexmix(formula = formula, data = data_dich, k = k, model = model, control = control)
+      rm(counter, envir = the) # counter will be created during the M-step driver
 
-   # assign 1 to k in package environment to be used during M-step driver
-   assign("k", 1, envir=the)
+      data_dich$mod_comp <- mod@cluster
 
-   data_list <- list()
-   for(i in unique(mod@cluster)){
-     data_list[[i]] <- data[data$mod_comp == i,]
-   }
+      data$roworder <- 1:nrow(data)
+      data <- merge(data, unique(data_dich[,c(id_col,"mod_comp")]), by = id_col)
+      data <- data[order(data$roworder), ]
+
+      # which id belongs to which class
+      id_classes <- data_dich[,c(id_col,"mod_comp")]
+    }
+
+    # return only estimated classes without model new model coefficients
+    if(classes_only == TRUE){
+      return(id_classes)
+    }
 
 
-   mod_list <- lapply(data_list, function(xy){
-     if(is.null(xy)){
-      mod <- NULL
-      warning( paste("One or more components are empty. Setting mod to NULL."))
-     }else{
-       model <- list(FLXMRhyreg(type= type[data$mod_comp == unique(xy$mod_comp)],
-                                #type = type,
-                                stv = stv, # stv can be a list
-                                type_cont = type_cont,
-                                type_dich = type_dich,
-                                variables_both = variables_both,
-                                variables_cont = variables_cont,
-                                variables_dich = variables_dich,
-                                opt_method = opt_method,
-                                optimizer = optimizer,
-                                lower = lower,
-                                upper = upper,
-                              #  non_linear = non_linear,
-                                formula_orig = formula_orig))
+    # SECOND STEP: GET MODEL ESTIMATES
 
-       mod <- flexmix::flexmix(formula = formula, data = xy, k = 1, model = model, control = control)
-       rm(counter, envir = the) # counter will be created during the M-step driver
-     }
-     return(mod)
-   })
+    # assign 1 to k in package environment to be used during M-step driver
+    assign("k", 1, envir=the)
 
-   mod_list$id_classes <- unique(id_classes)
-   return(mod_list)
- }
+    data_list <- list()
+    for(i in unique(mod@cluster)){
+      data_list[[i]] <- data[data$mod_comp == i,]
+    }
+
+
+    mod_list <- lapply(data_list, function(xy){
+      if(is.null(xy)){
+        mod <- NULL
+        warning( paste("One or more components are empty. Setting mod to NULL."))
+      }else{
+        model <- list(FLXMRhyreg(type= type[data$mod_comp == unique(xy$mod_comp)],
+                                 stv = stv, # stv can be a list
+                                 type_cont = type_cont,
+                                 type_dich = type_dich,
+                                 variables_both = variables_both,
+                                 variables_cont = variables_cont,
+                                 variables_dich = variables_dich,
+                                 opt_method = opt_method,
+                                 optimizer = optimizer,
+                                 lower = lower,
+                                 upper = upper,
+                                 formula_type_classic = formula_type_classic))
+
+        assign("data", xy, envir = the)
+
+        mod <- flexmix::flexmix(formula = formula, data = xy, k = 1, model = model, control = control)
+        rm(counter, envir = the) # counter will be created during the M-step driver
+      }
+      return(mod)
+    })
+
+    mod_list$id_classes <- unique(id_classes)
+    return(mod_list)
+  }
   rm(k, envir = the)
 }
 
 
-### new summary function ###
 
-#' construct model summary as in base R
+
+
+###############
+### SUMMARY ###
+###############
+
+
+#' model summary for hyreg2 objects
 #'
-#' @description get model parameters of model generated by `hyreg2` oder `hyreg2_het`
+#' @description get model parameters of model generated by `hyreg2` or `hyreg2_het`
 #'
 #' @param object `modelobject` generated with [hyreg2()] or [hyreg2_het()]
-#' @return `summary` object of [bbmle::mle2()] model
+#' @return `summary` object of [bbmle::mle2()] model,  Please note
+#' that the outputs for `sigma` and `theta` are on a log-scale and have to be transformed using `exp()`to get the correct estimated values.
+#'
 #'
 #' @author Svenja Elkenkamp
 #' @examples
@@ -519,10 +642,11 @@ summary_hyreg2 <- function(object){
 }
 
 
-##############################
+#########################
+
 #' extract parameter estimates as named vector
 #'
-#' @description function to export coefficient values and names from a `model` fitted with `hyreg2` or `hyreg2_het`
+#' @description function to export coefficient values and names from a `model` fitted by `hyreg2` or `hyreg2_het`
 #' These values can be used as `stv` for a new model with `k > 1`
 #' @param mod `model`output from [hyreg2] oder [hyreg2_het]. If `latent` was `"cont"` or `"dich"` only one element of the output list can be used.
 #' @param comp `charachter`, default `"Comp.1"`. `"Comp.x"` indicating values from which model `component` (`x`) should be exported
@@ -566,42 +690,6 @@ get_stv <- function(mod, comp = "Comp.1"){
 
 
 ##################################
-
-
-
-# for use of fit_mle
-# internal function, not for direct user use
-gendf <- function(list){
-  df <- list()
-  for(j in 1:length(list)){
-    df[[j]] <- data.frame("Estimates" = c(list[[j]]@parameters[["coef"]], #  maybe include an other apply function here?
-                                          list[[j]]@parameters[["sigma"]],
-                                          list[[j]]@parameters[["theta"]]),
-                          "Std Error" = bbmle::summary(list[[j]]@parameters[["fit_mle"]])@coef[,2],
-                          "pvalue" =bbmle::summary(list[[j]]@parameters[["fit_mle"]])@coef[,4])
-    # give AIC, loglik here as additional arguments?
-  }
-
-  return(df)
-}
-
-
-### refit function ###
-
-# get parametervalues of models
-# object is outcome of hyreg2
-refit <- function(object){
-  if(is.list(object)){
-    out <- lapply(object, function(k){
-      comp <- k@components
-      out_list <- lapply(comp, function(j){gendf(j)})
-    })
-  }else{
-    comp <- object@components
-    out <- lapply(comp, function(j){gendf(j)})
-  }
-  return(out)
-}
 
 
 

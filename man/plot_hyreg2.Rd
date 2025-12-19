@@ -2,14 +2,14 @@
 % Please edit documentation in R/plot_hyreg2.R
 \name{plot_hyreg2}
 \alias{plot_hyreg2}
-\title{plot function to visualize the classification based on the model estimated using \code{hyreg2} or \code{hyreg2_het}}
+\title{plot function for \code{hyreg2}}
 \usage{
 plot_hyreg2(
   data,
   x,
   y,
   id_col,
-  id_df_model,
+  class_df_model,
   type_to_plot = NULL,
   colors = NULL
 )
@@ -17,16 +17,16 @@ plot_hyreg2(
 \arguments{
 \item{data}{a \code{dataframe}, which was used to estimate the \code{model} using \code{\link[=hyreg2]{hyreg2()}} or \code{\link[=hyreg2_het]{hyreg2_het()}}}
 
-\item{x}{\code{charachter} string, column of \code{data} to be plotted in x-axis}
+\item{x}{\code{charachter} string, column of \code{data} to be plotted on x-axis}
 
-\item{y}{\code{charachter} string, column of \code{data} to be plotted in y-axis}
+\item{y}{\code{charachter} string, column of \code{data} to be plotted on y-axis}
 
 \item{id_col}{\code{charachter} sting, grouping variable, same as was given in \code{model}.
 if model was estimated without grouping, see Details}
 
-\item{id_df_model}{\code{dataframe} of two columns indicating which group belongs to which class,
+\item{class_df_model}{\code{dataframe} of two columns indicating which group belongs to which class,
 first column named as input \code{id_col}, second column named \code{"mod_comp"}.
-this input can be generated using the \code{\link[=give_id]{give_id()}} function, see Details.}
+this input can be generated using the \code{\link[=give_class]{give_class()}} function, see Details.}
 
 \item{type_to_plot}{\code{list} of two \code{charachter} elements. First: \code{columnname} of column containing indicator for \code{type} of \code{data},
 Second: \code{value} of column \code{type}, that should be used for the plot, see details of \code{\link[=hyreg2]{hyreg2()}} inputs \code{type} and \code{type_cont},\code{type_dich}}
@@ -34,17 +34,16 @@ Second: \code{value} of column \code{type}, that should be used for the plot, se
 \item{colors}{\code{charachter} vector, colors to be used in \code{ggplot}, default \code{NULL} - than colors are choosen automatically}
 }
 \value{
-\code{ggplot} object visualizing x against y by classes from the model
+\code{ggplot} object visualizing x against y by classes
 }
 \description{
-This function can be used to visualize the classification based on the model for different variables.
-\code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} is used.
+Function to visualize model results by \code{hyreg2} or \code{hygre2_het}
 }
 \details{
-\code{id_col_df} has to be provided anyway, even if the model was estimated without grouping variable.
+\code{id_col} must be provided anyway, even if the model was estimated without grouping variable.
 Since there might be no grouping varibale in the \code{data}, we recommend to create a new column called \code{"observation"}
 in data using the \code{rownames}/\code{observationnumbers} as \code{charachter} values and use this column as
-input for \code{id_col} in \code{plot_hyreg2}, additionally you can then use \code{id_df_model} =  \code{give_id(data,model,"observation")},
+input for \code{id_col} in \code{plot_hyreg2}, additionally you can use \code{class_df_model} =  \code{give_class(data,model,"observation")},
 see example
 }
 \examples{
@@ -72,7 +71,7 @@ plot_hyreg2(data = simulated_data_norm,
           x = "id",
           y = "y",
           id_col = "id",
-          id_df_model = give_id(data = simulated_data_norm,
+          class_df_model = give_class(data = simulated_data_norm,
                                 model = hyflex_mod,
                                 id = "id"))
 

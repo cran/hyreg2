@@ -3,7 +3,7 @@
 export(FLXMRhyreg)
 export(FLXMRhyreg_het)
 export(get_stv)
-export(give_id)
+export(give_class)
 export(hyreg2)
 export(hyreg2_het)
 export(plot_hyreg2)

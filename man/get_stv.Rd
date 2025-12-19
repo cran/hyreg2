@@ -16,7 +16,7 @@ get_stv(mod, comp = "Comp.1")
 \code{hyreg2} or \code{hyreg2_het}
 }
 \description{
-function to export coefficient values and names from a \code{model} fitted with \code{hyreg2} or \code{hyreg2_het}
+function to export coefficient values and names from a \code{model} fitted by \code{hyreg2} or \code{hyreg2_het}
 These values can be used as \code{stv} for a new model with \code{k > 1}
 }
 \examples{

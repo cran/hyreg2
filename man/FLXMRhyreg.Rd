@@ -19,11 +19,12 @@ FLXMRhyreg(
   optimizer = "optim",
   lower = -Inf,
   upper = Inf,
+  formula_type_classic = TRUE,
   ...
 )
 }
 \arguments{
-\item{formula}{linear model \code{formula}}
+\item{formula}{model \code{formula}, automatically provided by \code{hyreg2} and \code{\link[flexmix:flexmix]{flexmix::flexmix()}}}
 
 \item{family}{default \code{"hyreg"}, needed for \code{\link[flexmix:flexmix]{flexmix::flexmix()}}}
 
@@ -55,6 +56,9 @@ set to \code{"L-BFGS-B"}, default \code{-INF},}
 
 \item{upper}{upper bound for censored data. If this is used, \code{opt_method} must be
 set to \code{"L-BFGS-B"},default \code{INF}}
+
+\item{formula_type_classic}{\code{logical}; is the provided \code{formula} a typical R formula containing only variables
+or does it include variables and parameters? default \code{TRUE}}
 
 \item{...}{additional arguments for \code{\link[flexmix:flexmix]{flexmix::flexmix()}} or \code{\link[bbmle:mle2]{bbmle::mle2()}}}
 }

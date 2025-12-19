@@ -1,9 +1,9 @@
 
-#' function for model estimation for EQ-5D valueset data accounting for heteroscedasticity in continous data
+#' Estimating hybrid models accounting for heteroscedasticity in continuous data
 #'
-#' @description Estimation of hybrid model for EQ-5D data
+#' @description Estimation of hybrid model using continuous and dichotomous data e.g. EQ-5D data
 #'
-#' @param formula linear model `formula`. Using `|x` will include a grouping variable `x`. see Details.
+#' @param formula linear model `formula`. Using `|xg` will include a grouping variable `xg`. see Details.
 #' @param formula_sigma linear `formula` linear formula for sigma estimation. If `formula_sigma` is not provided,
 #' `formula` (excluding any grouping variables) is used by default, see Details
 #' @param data a `data.frame` containing the data. see Details.
@@ -45,7 +45,7 @@
 #' see details of different inputs listed below
 #'
 #'@section formula:
-#' a typical R formula of the form `y ~ x1 + x2 + …` should be provided.
+#' a classic R formula of the form `y ~ x1 + x2 + …` should be provided.
 #' Additionally, it is possible to include a grouping variable for repeated measures by using
 #' `“| xg”` where `xg` is the column containing the group-memberships. The resulting formula will look
 #' like this:  `y ~ x1 + x2 +… | xg`.  In `flexmix`, this is called the concomitant variable specification:
@@ -179,11 +179,6 @@ hyreg2_het <-function(formula,
                   variables_both = NULL,
                   variables_dich = NULL,
                   variables_cont = NULL,
-               #   non_linear = FALSE,
-                  # additional arguments for flexmix or optimizer ?
-                  # MISSING:
-                  # non linear regression not implemented yet
-
                   ...){
 
   dotarg <- list(...)
@@ -193,6 +188,10 @@ hyreg2_het <-function(formula,
   }
   # assign k to k in package environment to be used during M-step driver
   assign("k", k, envir=the)
+  if(exists("counter", envir = the)){
+    rm("counter", envir = the)
+  }
+
 
   # prepare formula handling
   formula_string <- paste(deparse(formula), collapse = "")
@@ -377,18 +376,6 @@ hyreg2_het <-function(formula,
 
 
 
-  ### NON LINEAR FUNCTIONS ###
-  # NOT IMPLEMENTED YET
-
-  formula_orig <- formula
-  # if(non_linear == TRUE){
-  #   # formula <- function to keep only names of data columns
-  # }
-  # # for linear functoins formula and formula_orig are the same
-
-
-
-
   ### ESTIMATION ###
   if(latent == "both"){
 
@@ -406,9 +393,6 @@ hyreg2_het <-function(formula,
                              optimizer = optimizer,
                              lower = lower,
                              upper = upper))
-                            # non_linear = non_linear))
-    #formula_orig = formula
-
 
 
     fit <- flexmix::flexmix(formula = formula, data = data, k = k, model = model, control = control)
@@ -439,9 +423,11 @@ hyreg2_het <-function(formula,
     # FIRST STEP: GET LATENT CLASSES
     if(latent == "cont"){
       data_cont <- data[type == type_cont,]
-      model <- list(FLXMRhyreg( data = data_cont,
+      model <- list(FLXMRhyreg_het( data = data_cont,
                                 type= type[type == type_cont],
                                stv = stv,
+                               stv_sigma = stv_sigma,
+                               formula_sigma = formula_sigma,
                                type_cont = type_cont,
                                type_dich = type_dich,
                                variables_both = variables_both,
@@ -450,9 +436,7 @@ hyreg2_het <-function(formula,
                                opt_method = opt_method,
                                optimizer = optimizer,
                                lower = lower,
-                               upper = upper,
-                            #   non_linear = non_linear,
-                               formula_orig = formula_orig))
+                               upper = upper))
 
 
       mod <- flexmix::flexmix(formula = formula, data = data_cont, k = k, model = model, control = control)
@@ -464,16 +448,17 @@ hyreg2_het <-function(formula,
       data <- merge(data, unique(data_cont[,c(id_col,"mod_comp")]), by = id_col)
       data <- data[order(data$roworder), ]
 
-      # später auch ausgeben können, welche ID zu welcher Klasse zugeordnet wurde
       id_classes <- data_cont[,c(id_col,"mod_comp")]
 
     }
 
     if(latent == "dich"){
       data_dich <- data[type == type_dich,]
-      model <- list(FLXMRhyreg( data = data_dich,
+      model <- list(FLXMRhyreg_het( data = data_dich,
                                 type= type[type == type_dich],
                                stv = stv,
+                               stv_sigma = stv_sigma,
+                               formula_sigma = formula_sigma,
                                type_cont = type_cont,
                                type_dich = type_dich,
                                variables_both = variables_both,
@@ -482,9 +467,7 @@ hyreg2_het <-function(formula,
                                opt_method = opt_method,
                                optimizer = optimizer,
                                lower = lower,
-                               upper = upper,
-                             #  non_linear = non_linear,
-                               formula_orig = formula_orig))
+                               upper = upper))
 
 
       mod <- flexmix::flexmix(formula = formula, data = data_dich, k = k, model = model, control = control)
@@ -519,9 +502,11 @@ hyreg2_het <-function(formula,
         mod <- NULL
         warning( paste("One or more components are empty. Setting mod to NULL"))
       }else{
-        model <- list(FLXMRhyreg(type= type[data$mod_comp == unique(xy$mod_comp)],
-                                 #type = type,
+        model <- list(FLXMRhyreg_het(type= type[data$mod_comp == unique(xy$mod_comp)],
+                                     data = xy,
                                  stv = stv, # stv can be a list
+                                 stv_sigma = stv_sigma,
+                                 formula_sigma = formula_sigma,
                                  type_cont = type_cont,
                                  type_dich = type_dich,
                                  variables_both = variables_both,
@@ -530,9 +515,7 @@ hyreg2_het <-function(formula,
                                  opt_method = opt_method,
                                  optimizer = optimizer,
                                  lower = lower,
-                                 upper = upper,
-                              #   non_linear = non_linear,
-                                 formula_orig = formula_orig))
+                                 upper = upper))
 
         mod <- flexmix::flexmix(formula = formula, data = xy, k = 1, model = model, control = control)
         rm(counter, envir = the) # counter will be created during the M-step driver

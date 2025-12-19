@@ -7,13 +7,14 @@
 \format{
 \subsection{\code{simulated_data_norm}}{
 
-A simulated data frame with 600 rows and 8 columns, following a combination of normal and binomial distribution
+A simulated data frame with 600 rows and 9 columns, following a combination of normal and binomial distribution
 \describe{
-\item{type}{type of data}
-\item{y}{result of the model y = x1 + x2 + x3}
+\item{type}{type of data, "TTO" indicates normal distribution, "DCE_A" indicates binomial distribution}
+\item{y}{result of the formula y ~ x1 + x2 + x3}
 \item{x1, x2, x3}{random numbers from rnorm}
 \item{class}{original class of the data point}
 \item{id}{id number of observations to simulated different persons}
+\item{y_non}{result of the formula y ~ (x1 \* beta1 + x2 \* beta3) \* (x1 \* beta1 + x3 \* beta3)}
 \item{y_cens}{column y censored at 3}
 ...
 }
