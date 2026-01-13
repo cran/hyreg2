@@ -475,16 +475,12 @@ outcome values <code>y</code> are generated according to the linear
 predictor</p>
 <p><span class="math inline">\(x_1 * \beta_{x1} +x_2 *  \beta_{x2}+ x_3
 * \beta_{x3} = Xb\)</span>.</p>
-<p>Additionally, the variable <code>y_non</code> is computed according
-to the non-linear model <span class="math inline">\(\frac{1}{\exp(x_1 *
-\beta_{x1} + x_2 * \beta_{x2})} = Xb_{non}\)</span>.</p>
-<p>For the continuous data, <code>y</code> and <code>y_non</code> values
-were generated directly using the function rnorm with <code>Xb</code> or
+<p>For the continuous data, <code>y</code> values were generated
+directly using the function rnorm with <code>Xb</code> or
 <code>Xb_non</code> as the mean. For the dichotomous data, the values of
-<code>Xb</code> or <code>Xb_non</code> are multiplied by a scaling
-parameter <code>theta</code> and subsequently simulated using the
-function <code>rbinom</code>. The code for the simulation can be seen
-below.</p>
+<code>Xb</code> are multiplied by a scaling parameter <code>theta</code>
+and subsequently simulated using the function <code>rbinom</code>. The
+code for the simulation can be seen below.</p>
 <pre class="r"><code># simulate dataframe called simulated_data_norm
 
 library(hyreg2)
@@ -1319,17 +1315,20 @@ setting, it is not possible to estimate non-linear formulas or the
 and Parkin 2022)</span> . Therefore, in <code>hyreg2</code>, it is
 possible to specify model formulas with variables and parameters
 (non-classic formulas). For example, if a model should be estimated for
-the mathematical equation <span class="math inline">\(\frac{1}{e^{x_1 *
-\beta_{1} + x_2 *  \beta_{2}}} = y\)</span>, this must be specified as a
-formula with additional parameters provided, which are not column names
-in the dataset:
-<code>formula = y ~ 1/exp(x1 * beta1 + x2 * beta2)</code>, where the
-<code>beta</code>s represent the parameters to be estimated and
-the<code>x</code>s are column names from the dataset. Additionally,
-<code>formula_type_classic</code> must be set to <code>FALSE</code>.
-When estimating an intercept, the formula must explicitly include a
-parameter named <code>&quot;INTERCEPT&quot;</code>(without a corresponding
-variable from the dataset),
+the mathematical equation (1) <span class="math inline">\((x_1 * \beta_1
++ x_2 * \beta_2) + (x_1 * \beta_1 + x_3 * \beta_3) = y\)</span> or (2)
+<span class="math inline">\(\frac{1}{e^{x_1 * \beta_{1} + x_2
+*  \beta_{2}}} = y\)</span>, this must be specified as a formula with
+additional parameters provided, which are not column names in the
+dataset:
+(1)<code>formula &lt;- y ~ (x1 * beta1 + x2 * beta2 ) * (x1 *beta1 + x3 * beta3)</code>
+or (2)<code>formula = y ~ 1/exp(x1 * beta1 + x2 * beta2)</code>, where
+the <code>beta</code>s represent the parameters to be estimated and
+the<code>x</code>s are column names from the dataset.</p>
+<p>Additionally, <code>formula_type_classic</code> must be set to
+<code>FALSE</code>. When estimating an intercept, the formula must
+explicitly include a parameter named <code>&quot;INTERCEPT&quot;</code>(without a
+corresponding variable from the dataset),
 e.g. <code>formula = y ~  1/exp(INTERCEPT + x1 * beta1 + x2 * beta2)</code></p>
 <p>We simulate a new column called <code>y_non</code> for the dataset
 simulated_data_norm and show how to estimate a model using non-classic

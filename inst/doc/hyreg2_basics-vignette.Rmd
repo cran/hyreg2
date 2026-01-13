@@ -57,10 +57,9 @@ Based on these, outcome values `y` are generated according to the linear predict
 
 $x_1 * \beta_{x1} +x_2 *  \beta_{x2}+ x_3 * \beta_{x3} = Xb$.
 
-Additionally, the variable `y_non` is computed according to the non-linear model $\frac{1}{\exp(x_1 * \beta_{x1} + x_2 * \beta_{x2})} = Xb_{non}$.
 
-For the continuous data, `y` and `y_non` values were generated directly using the function rnorm with `Xb` or `Xb_non` as the mean.
-For the dichotomous data, the values of `Xb` or `Xb_non` are multiplied by a scaling parameter `theta` and subsequently simulated using the function `rbinom`.
+For the continuous data, `y` values were generated directly using the function rnorm with `Xb` or `Xb_non` as the mean.
+For the dichotomous data, the values of `Xb` are multiplied by a scaling parameter `theta` and subsequently simulated using the function `rbinom`.
 The code for the simulation can be seen below.
 
 ```{r chunk-1, message=FALSE, warning=FALSE}
@@ -741,7 +740,8 @@ summary_hyreg2(mod_partialc)
 All inputs and functionalities that have been considered so far are used with classic R formulas and the default setting (`TRUE`) for the input `formula_type_classic`.
 However, with this setting, it is not possible to estimate non-linear formulas or the 8-parameter model for EQ-5D data[@devlin2022] .
 Therefore, in `hyreg2`, it is possible to specify model formulas with variables and parameters (non-classic formulas).
-For example, if a model should be estimated for the mathematical equation $\frac{1}{e^{x_1 * \beta_{1} + x_2 *  \beta_{2}}} = y$, this must be specified as a formula with additional parameters provided, which are not column names in the dataset: `formula = y ~ 1/exp(x1 * beta1 + x2 * beta2)`, where the `beta`s represent the parameters to be estimated and the`x`s are column names from the dataset.
+For example, if a model should be estimated for the mathematical equation (1) $(x_1 * \beta_1 + x_2 * \beta_2) + (x_1 * \beta_1 + x_3 * \beta_3) = y$ or (2) $\frac{1}{e^{x_1 * \beta_{1} + x_2 *  \beta_{2}}} = y$, this must be specified as a formula with additional parameters provided, which are not column names in the dataset: (1)` formula <- y ~ (x1 * beta1 + x2 * beta2 ) * (x1 *beta1 + x3 * beta3)` or (2)`formula = y ~ 1/exp(x1 * beta1 + x2 * beta2)`, where the `beta`s represent the parameters to be estimated and the`x`s are column names from the dataset.
+
 Additionally, `formula_type_classic` must be set to `FALSE`.
 When estimating an intercept, the formula must explicitly include a parameter named `"INTERCEPT"`(without a corresponding variable from the dataset), e.g. `formula = y ~  1/exp(INTERCEPT + x1 * beta1 + x2 * beta2)`
 
