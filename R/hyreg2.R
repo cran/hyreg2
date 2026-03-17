@@ -178,7 +178,7 @@ hyreg2 <-function(formula,
   }
 
   # assign k to k in package environment to be used during M-step driver
-  assign("k", k, envir=the)
+  assign("k", k, envir = the)
   if(exists("counter", envir = the)){
     rm("counter", envir = the)
   }
@@ -201,31 +201,38 @@ hyreg2 <-function(formula,
     if(!is.list(stv)){
       if(is.null(stv)){
         warning(paste0("Argument stv not provided. Setting all start values from formula to 0.1 and start values for sigma and theta to 1."))
-        stv <- setNames(c(rep(0.1,dim(model.matrix(formula_short,data))[2]),1,1), c(colnames(model.matrix(formula_short,data)),c("sigma","theta")))
+        stv <- setNames(c(rep(0.1,dim(model.matrix(formula_short,data))[2]), 1, 1),
+                        c(colnames(model.matrix(formula_short, data)), c("sigma", "theta")))
       }else{
 
         # one or more stv missing
-        if(any(!is.element(colnames(model.matrix(formula_short,data)),names(stv)))){
-          miss <- colnames(model.matrix(formula_short,data))[!is.element(colnames(model.matrix(formula_short,data)),names(stv))]
+        if(any(!is.element(colnames(model.matrix(formula_short,data)),
+                           names(stv)))){
+          miss <- colnames(model.matrix(formula_short,data))[!is.element(colnames(model.matrix(formula_short, data)),
+                                                                         names(stv))]
           stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
           ))
         }
 
         # theta missing
-        if(!is.element("theta",names(stv))){
-          stv <- c(stv,setNames(1,"theta"))
+        if(!is.element("theta",
+                       names(stv))){
+          stv <- c(stv, setNames(1, "theta"))
           warning(paste0("Start value missing for theta, setting to 1."))
         }
 
         # sigma missing
-        if(!is.element("sigma",names(stv))){
-          stv <- c(stv,setNames(1,"sigma"))
+        if(!is.element("sigma",
+                       names(stv))){
+          stv <- c(stv, setNames(1, "sigma"))
           warning(paste0("Start value missing for sigma, setting to 1."))
         }
 
         # stv for variables not in formula given, d.h. zu viele angegeben
-        if(any(!is.element(names(stv), c(colnames(model.matrix(formula_short,data)),"theta","sigma")))){
-          much <- names(stv)[!is.element(names(stv), c(colnames(model.matrix(formula_short,data)),"theta","sigma"))]
+        if(any(!is.element(names(stv),
+                           c(colnames(model.matrix(formula_short, data)), "theta", "sigma")))){
+          much <- names(stv)[!is.element(names(stv),
+                                         c(colnames(model.matrix(formula_short, data)), "theta", "sigma"))]
           stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
         }
         #  check order in FLXMRhyreg
@@ -237,27 +244,33 @@ hyreg2 <-function(formula,
 
       for(i in 1:length(stv)){
         # one or more stv missing
-        if(any(!is.element(colnames(model.matrix(formula_short,data)),names(stv[[i]])))){
-          miss <- colnames(model.matrix(formula_short,data))[!is.element(colnames(model.matrix(formula_short,data)),names(stv[[i]]))]
+        if(any(!is.element(colnames(model.matrix(formula_short, data)),
+                           names(stv[[i]])))){
+          miss <- colnames(model.matrix(formula_short, data))[!is.element(colnames(model.matrix(formula_short, data)),
+                                                                          names(stv[[i]]))]
           stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
           ))
         }
 
         # theta missing
-        if(!is.element("theta",names(stv[[i]]))){
-          stv[[i]] <- c(stv[[i]],setNames(1,"theta"))
+        if(!is.element("theta",
+                       names(stv[[i]]))){
+          stv[[i]] <- c(stv[[i]], setNames(1, "theta"))
           warning(paste0("Start value missing for theta, setting to 1."))
         }
 
         # sigma missing
-        if(!is.element("sigma",names(stv[[i]]))){
-          stv[[i]] <- c(stv[[i]],setNames(1,"sigma"))
+        if(!is.element("sigma",
+                       names(stv[[i]]))){
+          stv[[i]] <- c(stv[[i]], setNames(1,"sigma"))
           warning(paste0("Start value missing for sigma, setting to 1."))
         }
 
         # stv for variables not in formula given, d.h. zu viele angegeben
-        if(any(!is.element(names(stv[[i]]), c(colnames(model.matrix(formula_short,data)),"theta","sigma")))){
-          much <- names(stv[[i]])[!is.element(names(stv[[i]]), c(colnames(model.matrix(formula_short,data)),"theta","sigma"))]
+        if(any(!is.element(names(stv[[i]]),
+                           c(colnames(model.matrix(formula_short, data)), "theta", "sigma")))){
+          much <- names(stv[[i]])[!is.element(names(stv[[i]]),
+                                              c(colnames(model.matrix(formula_short, data)), "theta", "sigma"))]
           stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
         }
       }
@@ -267,8 +280,8 @@ hyreg2 <-function(formula,
     # ADAPTIONS FOR NON-CLASSIC FORMULAS
 
     # save data and formula in the environment
-    assign("formula_non", formula_short, envir=the)
-    assign("data", data, envir=the)
+    assign("formula_non", formula_short, envir = the)
+    assign("data", data, envir = the)
 
     # transform formulas for flexmix inputs
     formula <- get_data_vars(formula, data)
@@ -278,37 +291,43 @@ hyreg2 <-function(formula,
     ### STV Check NON-CLASSIC ###
 
     # check stv for names in formula
-    vars <- all.vars(the$formula_non[[3]])[!is.element(all.vars(the$formula_non[[3]]),names(data))]
+    vars <- all.vars(the$formula_non[[3]])[!is.element(all.vars(the$formula_non[[3]]),
+                                                       names(data))]
 
     # no stv
     if(!is.list(stv)){
       if(is.null(stv)){
         warning(paste0("Argument stv not provided. Setting all start values from formula to 0.1 and start values for sigma and theta to 1."))
-        stv <- setNames(c(rep(0.1,length(vars)),1,1), c(vars,c("sigma","theta")))
+        stv <- setNames(c(rep(0.1, length(vars)), 1, 1),
+                        c(vars, c("sigma", "theta")))
       }else{
 
         # one or more stv missing
-        if(any(!is.element(vars,names(stv)))){
-          miss <- vars[!is.element(vars,names(stv))]
+        if(any(!is.element(vars, names(stv)))){
+          miss <- vars[!is.element(vars, names(stv))]
           stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
           ))
         }
 
         # theta missing
-        if(!is.element("theta",names(stv))){
-          stv <- c(stv,setNames(1,"theta"))
+        if(!is.element("theta",
+                       names(stv))){
+          stv <- c(stv, setNames(1,"theta"))
           warning(paste0("Start value missing for theta, setting to 1."))
         }
 
         # sigma missing
-        if(!is.element("sigma",names(stv))){
-          stv <- c(stv,setNames(1,"sigma"))
+        if(!is.element("sigma",
+                       names(stv))){
+          stv <- c(stv, setNames(1,"sigma"))
           warning(paste0("Start value missing for sigma, setting to 1."))
         }
 
         # stv for variables not in formula given, d.h. zu viele angegeben
-        if(any(!is.element(names(stv), c(vars,"theta","sigma")))){
-          much <- names(stv)[!is.element(names(stv), c(vars,"theta","sigma"))]
+        if(any(!is.element(names(stv),
+                           c(vars, "theta", "sigma")))){
+          much <- names(stv)[!is.element(names(stv),
+                                         c(vars, "theta", "sigma"))]
           stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
         }
         #  check order in FLXMRhyreg
@@ -320,27 +339,33 @@ hyreg2 <-function(formula,
 
       for(i in 1:length(stv)){
         # one or more stv missing
-        if(any(!is.element(vars,names(stv[[i]])))){
-          miss <- vars[!is.element(vars,names(stv[[i]]))]
+        if(any(!is.element(vars,
+                           names(stv[[i]])))){
+          miss <- vars[!is.element(vars,
+                                   names(stv[[i]]))]
           stop(paste0("Start value(s) missing for ", paste(miss, collapse = ", ") ,". Please provide start values for all relevant formula variables."
           ))
         }
 
         # theta missing
-        if(!is.element("theta",names(stv[[i]]))){
-          stv[[i]] <- c(stv[[i]],setNames(1,"theta"))
+        if(!is.element("theta",
+                       names(stv[[i]]))){
+          stv[[i]] <- c(stv[[i]], setNames(1,"theta"))
           warning(paste0("Start value missing for theta, setting to 1."))
         }
 
         # sigma missing
-        if(!is.element("sigma",names(stv[[i]]))){
-          stv[[i]] <- c(stv[[i]],setNames(1,"sigma"))
+        if(!is.element("sigma",
+                       names(stv[[i]]))){
+          stv[[i]] <- c(stv[[i]], setNames(1, "sigma"))
           warning(paste0("Start value missing for sigma, setting to 1."))
         }
 
         # stv for variables not in formula given, d.h. zu viele angegeben
-        if(any(!is.element(names(stv[[i]]), c(vars,"theta","sigma")))){
-          much <- names(stv[[i]])[!is.element(names(stv[[i]]), c(vars,"theta","sigma"))]
+        if(any(!is.element(names(stv[[i]]),
+                           c(vars, "theta", "sigma")))){
+          much <- names(stv[[i]])[!is.element(names(stv[[i]]),
+                                              c(vars, "theta", "sigma"))]
           stop(paste0("Start values provided for variables not in formula: ",paste(much, collapse = ", ")))
         }
       }
@@ -353,10 +378,10 @@ hyreg2 <-function(formula,
   if(is.null(type) | is.null(type_dich) | is.null(type_cont)){
     stop(paste0("Argument(s) type, type_dich and/or typ_cont not provided."))
   }else{
-    if(!is.element(type_dich,unique(type))){
+    if(!is.element(type_dich, unique(type))){
       warning(paste0("Invalid type_dich: provided name not present in values of type"))
     }
-    if(!is.element(type_cont,unique(type))){
+    if(!is.element(type_cont, unique(type))){
       warning(paste0("Invalid type_cont: provided name not present in values of type"))
     }
   }
@@ -366,10 +391,12 @@ hyreg2 <-function(formula,
   ### VARIABALES Check ###
   if(!is.list(stv)){
     if(is.null(variables_both) & is.null(variables_dich) & is.null(variables_cont)){
-      variables_both <- names(stv)[!is.element(names(stv),c("sigma","theta"))]
+      variables_both <- names(stv)[!is.element(names(stv),
+                                               c("sigma", "theta"))]
     }else{
-      if(any(!is.element(names(stv)[!is.element(names(stv),c("sigma","theta"))],
-                         c(variables_both,variables_dich,variables_cont)))){
+      if(any(!is.element(names(stv)[!is.element(names(stv),
+                                                c("sigma", "theta"))],
+                         c(variables_both, variables_dich, variables_cont)))){
         # check if all variables are included
         stop(paste0("All variables named in stv must be contained in exactly one of: (1) variables_both, (2) variables_dich or (3) variables_cont."))
         # alternative: do not provide any of the vectors
@@ -387,16 +414,18 @@ hyreg2 <-function(formula,
     # different set of variables for each class not supported yet!
 
     if(is.null(variables_both) & is.null(variables_dich) & is.null(variables_cont)){
-      variables_both <- names(stv[[1]])[!is.element(names(stv[[1]]),c("sigma","theta"))]
+      variables_both <- names(stv[[1]])[!is.element(names(stv[[1]]),
+                                                    c("sigma", "theta"))]
     }else{
-      if(any(!is.element(names(stv[[1]])[!is.element(names(stv[[1]]),c("sigma","theta"))],
+      if(any(!is.element(names(stv[[1]])[!is.element(names(stv[[1]]),
+                                                     c("sigma", "theta"))],
                          c(variables_both,variables_dich,variables_cont)))){
         # check if all variables are included
         stop(paste0("All variables named in stv must be contained in exactly one of: (1) variables_both, (2) variables_dich or (3) variables_cont."))
         # alternative: do not provide any of the vectors
         # than all relevant variables are set to variables_both automatically
       }
-      if(any(table(c(variables_both,variables_cont,variables_dich))>1)){
+      if(any(table(c(variables_both, variables_cont, variables_dich)) > 1)){
         stop(paste0("All variables named in stv must be contained in exactly one of: (1) variables_both, (2) variables_dich or (3) variables_cont."))
       }
     }
@@ -410,14 +439,14 @@ hyreg2 <-function(formula,
     # hard coding for stv as list because formulas must be the same for all components
     # change this if formulas can differ between components
 
-    assign("stv", stv, envir=the)
+    assign("stv", stv, envir = the)
 
     if(!is.list(stv)){
-      assign("stv_cont", stv[!is.element(names(stv),c("sigma","theta", variables_dich))], envir = the)
-      assign("stv_dich", stv[!is.element(names(stv),c("sigma","theta", variables_cont))], envir = the)
+      assign("stv_cont", stv[!is.element(names(stv), c("sigma", "theta", variables_dich))], envir = the)
+      assign("stv_dich", stv[!is.element(names(stv), c("sigma", "theta", variables_cont))], envir = the)
     }else{
-      assign("stv_cont", stv[[1]][!is.element(names(stv[[1]]),c("sigma","theta", variables_dich))], envir = the)
-      assign("stv_dich", stv[[1]][!is.element(names(stv[[1]]),c("sigma","theta", variables_cont))], envir = the)
+      assign("stv_cont", stv[[1]][!is.element(names(stv[[1]]), c("sigma", "theta", variables_dich))], envir = the)
+      assign("stv_dich", stv[[1]][!is.element(names(stv[[1]]), c("sigma", "theta", variables_cont))], envir = the)
     }
 
     assign("formula_cont", formulacheck_variables(the$formula_non, the$data, the$stv_cont), envir = the)
@@ -428,7 +457,7 @@ hyreg2 <-function(formula,
   ### ESTIMATION ###
   if(latent == "both"){
 
-    model <- list(FLXMRhyreg(type= type,
+    model <- list(FLXMRhyreg(type = type,
                              stv = stv,
                              type_cont = type_cont,
                              type_dich = type_dich,
@@ -458,12 +487,14 @@ hyreg2 <-function(formula,
 
     idframe <- data.frame(id = data[,id_col],type)
     idcount <- as.data.frame(table(unique(idframe)))
-    data <- data[!is.element(as.character(data[,id_col]), as.character(idcount[idcount$Freq == 0,"id"])),]
-    type <- idframe[!is.element(as.character(idframe[,"id"]), as.character(idcount[idcount$Freq == 0,"id"])),"type"]
+    data <- data[!is.element(as.character(data[,id_col]),
+                             as.character(idcount[idcount$Freq == 0, "id"])),]
+    type <- idframe[!is.element(as.character(idframe[,"id"]),
+                                as.character(idcount[idcount$Freq == 0, "id"])), "type"]
 
     if(any(idcount$Freq == 0)){
-      miss <- idcount[idcount$Freq == 0,"id"]
-      warning(paste0(id_col ,paste(miss, collapse = ", "), " were removed, since they had only continuous or only dichotomous observations."))
+      miss <- idcount[idcount$Freq == 0, "id"]
+      warning(paste0(id_col, paste(miss, collapse = ", "), " were removed, since they had only continuous or only dichotomous observations."))
     }
 
     # FIRST STEP: GET LATENT CLASSES
@@ -471,7 +502,7 @@ hyreg2 <-function(formula,
       data_cont <- data[type == type_cont,]
       assign("data", data_cont, envir = the)
 
-      model <- list(FLXMRhyreg(type= type[type == type_cont],
+      model <- list(FLXMRhyreg(type = type[type == type_cont],
                                stv = stv,
                                type_cont = type_cont,
                                type_dich = type_dich,
@@ -494,10 +525,10 @@ hyreg2 <-function(formula,
       data_cont$mod_comp <- mod@cluster
 
       data$roworder <- 1:nrow(data)
-      data <- merge(data, unique(data_cont[,c(id_col,"mod_comp")]), by = id_col)
+      data <- merge(data, unique(data_cont[, c(id_col, "mod_comp")]), by = id_col)
       data <- data[order(data$roworder), ]
 
-      id_classes <- data_cont[,c(id_col,"mod_comp")]
+      id_classes <- data_cont[,c(id_col, "mod_comp")]
 
     }
 
@@ -505,7 +536,7 @@ hyreg2 <-function(formula,
       data_dich <- data[type == type_dich,]
       assign("data", data_dich, envir = the)
 
-      model <- list(FLXMRhyreg(type= type[type == type_dich],
+      model <- list(FLXMRhyreg(type = type[type == type_dich],
                                stv = stv,
                                type_cont = type_cont,
                                type_dich = type_dich,
@@ -529,7 +560,7 @@ hyreg2 <-function(formula,
       data <- data[order(data$roworder), ]
 
       # which id belongs to which class
-      id_classes <- data_dich[,c(id_col,"mod_comp")]
+      id_classes <- data_dich[,c(id_col, "mod_comp")]
     }
 
     # return only estimated classes without model new model coefficients
@@ -541,7 +572,7 @@ hyreg2 <-function(formula,
     # SECOND STEP: GET MODEL ESTIMATES
 
     # assign 1 to k in package environment to be used during M-step driver
-    assign("k", 1, envir=the)
+    assign("k", 1, envir = the)
 
     data_list <- list()
     for(i in unique(mod@cluster)){
@@ -554,7 +585,7 @@ hyreg2 <-function(formula,
         mod <- NULL
         warning( paste("One or more components are empty. Setting mod to NULL."))
       }else{
-        model <- list(FLXMRhyreg(type= type[data$mod_comp == unique(xy$mod_comp)],
+        model <- list(FLXMRhyreg(type = type[data$mod_comp == unique(xy$mod_comp)],
                                  stv = stv, # stv can be a list
                                  type_cont = type_cont,
                                  type_dich = type_dich,

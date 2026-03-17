@@ -74,13 +74,13 @@
 
 
 
-### FLXMRhyreg ###
+### FLXMRhyreg_het ###
 
 
 FLXMRhyreg_het <- function(data,
-                           formula= . ~ .,
+                           formula = . ~ .,
                            formula_sigma = formula_sigma,
-                           family=c("hyreg"),
+                           family = c("hyreg"),
                            type = NULL,
                            type_cont = NULL,
                            type_dich = NULL,
@@ -107,9 +107,9 @@ FLXMRhyreg_het <- function(data,
     return(NA)
   }
 
-  z <- new("FLXMRglm", weighted=TRUE, formula=formula,
-           name=paste("FLXMRhyreg"), offset = offset,
-           family="hyreg", refit=hyregrefit)
+  z <- new("FLXMRglm", weighted = TRUE, formula = formula,
+           name = paste("FLXMRhyreg"), offset = offset,
+           family ="hyreg", refit = hyregrefit)
 
   z@preproc.y <- function(x){
     if (ncol(x) > 1)
@@ -127,10 +127,10 @@ FLXMRhyreg_het <- function(data,
 
         # change needed for non-classic formulas
         if(type == type_cont){
-          p <- x %*% para$coef[is.element(names(para$coef),c(variables_cont,variables_both))]  # Xb in xreg
+          p <- x %*% para$coef[is.element(names(para$coef), c(variables_cont, variables_both))]  # Xb in xreg
         }
         if(type == type_dich){
-          p <- (x %*% para$coef[is.element(names(para$coef),c(variables_dich,variables_both))]) * para$theta
+          p <- (x %*% para$coef[is.element(names(para$coef), c(variables_dich, variables_both))]) * para$theta
         }
 
         if (!is.null(offset)) p <-  p + offset
@@ -144,27 +144,26 @@ FLXMRhyreg_het <- function(data,
 
         #prepare sigma
         xsigma <-  model.matrix(formula_sigma,data[type == type_cont,])
-        colnames(xsigma) <- paste0(colnames(xsigma),"_h")
+        colnames(xsigma) <- paste0(colnames(xsigma), "_h")
         sigma <- exp(xsigma %*% sigma[colnames(xsigma)])
 
 
         # prepare data
-        x1 <- x[type == type_cont,c(variables_cont,variables_both)]
-        x2 <-  x[type == type_dich,c(variables_dich,variables_both)]
+        x1 <- x[type == type_cont, c(variables_cont, variables_both)]
+        x2 <-  x[type == type_dich, c(variables_dich, variables_both)]
         y1 <- y[type == type_cont]
         y2 <-  y[type == type_dich]
 
 
         if(length(c(variables_cont,variables_both)) == 1){
-          Xb1 <- as.matrix(x1 * para$coef[c(variables_cont,variables_both)])
-          colnames(Xb1) <- c(variables_cont,variables_both)
+          Xb1 <- as.matrix(x1 * para$coef[c(variables_cont, variables_both)])
+          colnames(Xb1) <- c(variables_cont, variables_both)
         }else{
           Xb1 <- x1 %*% para$coef[colnames(x1)]
         }
-
         if(length(c(variables_dich,variables_both)) == 1){
-          Xb2 <- as.matrix( (x2 * para$coef[c(variables_dich,variables_both)]) * exp(theta) )
-          colnames(Xb2) <- c(variables_dich,variables_both)
+          Xb2 <- as.matrix( (x2 * para$coef[c(variables_dich, variables_both)]) * exp(theta) )
+          colnames(Xb2) <- c(variables_dich, variables_both)
         }else{
           Xb2 <-(x2 %*% para$coef[colnames(x2)]) * exp(theta)
         }
@@ -174,18 +173,18 @@ FLXMRhyreg_het <- function(data,
         logistic_tmp <- .5+.5*tanh(Xb2/2)
         pvals2 <- log(y2 *logistic_tmp + (1-y2)* (1-logistic_tmp)) # dich_logistic
 
-        pvals1 <- dnorm(y1, mean=Xb1, sd=sigma, log=TRUE) # cont_normal
+        pvals1 <- dnorm(y1, mean = Xb1, sd = sigma, log = TRUE) # cont_normal
 
 
         # for box constraints
         if(upper != Inf ){
           censV <- y1 == upper
-          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-upper)/sigma[censV],0,1) - pnorm((Xb1[censV]-Inf)/sigma,0,1))
+          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-upper)/sigma[censV], 0, 1) - pnorm((Xb1[censV]-Inf)/sigma, 0, 1))
         }
 
         if(lower != -Inf ){
           censV <- y1 == lower
-          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-(-Inf))/sigma[censV],0,1) - pnorm((Xb1[censV]-lower)/sigma,0,1))
+          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-(-Inf))/sigma[censV], 0, 1) - pnorm((Xb1[censV]-lower)/sigma, 0, 1))
         }
 
 
@@ -203,12 +202,13 @@ FLXMRhyreg_het <- function(data,
       }
 
       new("FLXcomponent",
-          parameters=list(coef=para$coef,
-                          sigma=para$sigma,
+          parameters=list(coef = para$coef,
+                          sigma = para$sigma,
                           theta = para$theta,
                           fit_mle = para$fit_mle),
-          logLik=logLik, predict=predict,
-          df=para$df)
+          logLik=logLik,
+          predict = predict,
+          df = para$df)
     }
 
 
@@ -219,24 +219,24 @@ FLXMRhyreg_het <- function(data,
       logLik2 <- function(stv){
 
         # prepare sigma
-        stv_sigma <- stv[is.element(names(stv),names(stv_sigma))]
-        stv <-  stv[!is.element(names(stv),names(stv_sigma))]
+        stv_sigma <- stv[is.element(names(stv), names(stv_sigma))]
+        stv <-  stv[!is.element(names(stv), names(stv_sigma))]
 
-        xsigma <-  model.matrix(formula_sigma,data[type == type_cont,])
-        colnames(xsigma) <- paste0(colnames(xsigma),"_h")
+        xsigma <-  model.matrix(formula_sigma, data[type == type_cont,])
+        colnames(xsigma) <- paste0(colnames(xsigma), "_h")
         sigma <- exp(xsigma %*% stv_sigma[colnames(xsigma)])
 
         # prepare data
-        x1 <- x[type == type_cont,c(variables_cont,variables_both)]
-        x2 <-  x[type == type_dich,c(variables_dich,variables_both)]
+        x1 <- x[type == type_cont, c(variables_cont, variables_both)]
+        x2 <-  x[type == type_dich, c(variables_dich, variables_both)]
         y1 <- y[type == type_cont]
         y2 <-  y[type == type_dich]
 
 
         #prepare stv
         theta <- exp(stv[is.element(names(stv),c("theta"))][[1]])
-        stv_cont <- stv[!is.element(names(stv),c("sigma","theta", variables_dich))]
-        stv_dich <- stv[!is.element(names(stv),c("sigma","theta", variables_cont))]
+        stv_cont <- stv[!is.element(names(stv),c("sigma", "theta", variables_dich))]
+        stv_dich <- stv[!is.element(names(stv),c("sigma", "theta", variables_cont))]
 
 
 
@@ -261,24 +261,22 @@ FLXMRhyreg_het <- function(data,
         logistic_tmp <- 0.5 + 0.5*tanh(Xb2/2)
         pvals2 <- log(y2 *logistic_tmp + (1-y2)* (1-logistic_tmp)) # dich_logistic
 
-        pvals1 <- dnorm(y1, mean=Xb1, sd=sigma, log=TRUE) # cont_normal
+        pvals1 <- dnorm(y1, mean = Xb1, sd = sigma, log = TRUE) # cont_normal
 
         # for box constraints:
         #in xreg:
         if(upper != Inf ){
           censV <- y1 == upper
-          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-upper)/sigma[censV],0,1) - pnorm((Xb1[censV]-Inf)/sigma,0,1))
+          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-upper)/sigma[censV], 0, 1) - pnorm((Xb1[censV]-Inf)/sigma, 0, 1))
         }
 
         if(lower != -Inf ){
           censV <- y1 == lower
-          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-(-Inf))/sigma[censV],0,1) - pnorm((Xb1[censV]-lower)/sigma,0,1))
+          pvals1[which(censV)] <- log(pnorm((Xb1[censV]-(-Inf))/sigma[censV], 0, 1) - pnorm((Xb1[censV]-lower)/sigma, 0, 1))
         }
 
 
         pvals <- c(pvals1,pvals2)
-
-
         pvals[pvals == -Inf] <- log(.Machine$double.xmin)
         pvals[pvals == Inf] <- log(.Machine$double.xmax)
 
@@ -292,8 +290,8 @@ FLXMRhyreg_het <- function(data,
 
 
       # changes names of stv_sigma to be able to get estimates for it
-      names(stv_sigma) <- paste0(names(stv_sigma),"_h")
-      bbmle::parnames(logLik2) <- c(colnames(x),"theta",names(stv_sigma)) # set names of inputs for logLik2
+      names(stv_sigma) <- paste0(names(stv_sigma), "_h")
+      bbmle::parnames(logLik2) <- c(colnames(x), "theta", names(stv_sigma)) # set names of inputs for logLik2
 
 
 
@@ -315,7 +313,7 @@ FLXMRhyreg_het <- function(data,
 
 
         fit_mle <- bbmle::mle2(minuslogl = logLik2,
-                               start = c(stv_in,stv_sigma_in),
+                               start = c(stv_in, stv_sigma_in),
                                optimizer = optimizer,
                                method = opt_method,
                                lower = lower,
@@ -340,7 +338,7 @@ FLXMRhyreg_het <- function(data,
 
 
           fit_mle <- bbmle::mle2(minuslogl = logLik2,
-                                 start = c(stv_in,stv_sigma_in),
+                                 start = c(stv_in, stv_sigma_in),
                                  optimizer = optimizer,
                                  method = opt_method,
                                  lower = lower,
@@ -348,7 +346,7 @@ FLXMRhyreg_het <- function(data,
 
 
         }else{
-          stv_new <- setNames(c(component$coef,component$theta,component$sigma),c(colnames(x),"theta",names(stv_sigma)))
+          stv_new <- setNames(c(component$coef, component$theta, component$sigma), c(colnames(x), "theta", names(stv_sigma)))
           fit_mle <- bbmle::mle2(minuslogl = logLik2,
                                  start = stv_new,
                                  optimizer = optimizer,
@@ -358,10 +356,10 @@ FLXMRhyreg_het <- function(data,
         }
       }
 
-      z@defineComponent(para = list(coef = fit_mle@coef[!is.element(names(fit_mle@coef),c(names(stv_sigma),"theta"))],
+      z@defineComponent(para = list(coef = fit_mle@coef[!is.element(names(fit_mle@coef), c(names(stv_sigma), "theta"))],
                                     df = ncol(x) + 1, #  how to change ???
-                                    sigma = fit_mle@coef[is.element(names(fit_mle@coef),names(stv_sigma))],
-                                    theta = fit_mle@coef[is.element(names(fit_mle@coef),c("theta"))],
+                                    sigma = fit_mle@coef[is.element(names(fit_mle@coef), names(stv_sigma))],
+                                    theta = fit_mle@coef[is.element(names(fit_mle@coef), c("theta"))],
                                     fit_mle = fit_mle,
                                     minLik = fit_mle@min)
       )
